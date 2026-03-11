@@ -25,18 +25,12 @@ const STATUS = {
 
 function sendToGAS(payload) {
   try {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = GAS_URL;
-    form.target = 'gas_iframe';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(payload);
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(() => document.body.removeChild(form), 1000);
+    const url = GAS_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.display = 'none';
+    document.body.appendChild(img);
+    setTimeout(() => document.body.removeChild(img), 3000);
   } catch(e) { console.error('GAS error:', e); }
 }
 
