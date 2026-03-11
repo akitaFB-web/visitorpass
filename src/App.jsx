@@ -191,30 +191,30 @@ function EmployeeForm({ onSubmit }) {
           </svg>
         </div>
         <h1 style={{ fontSize:21, fontWeight:700, marginBottom:5 }}>ลงทะเบียนบุคคลภายนอก</h1>
-        <p style={{ color:"var(--t2)", fontSize:13.5 }}>กรอกข้อมูลเพื่อขออนุมัติการเข้าโรงงาน</p>
+        <p style={{ color:"var(--t2)", fontSize:13.5 }}>กรอกข้อมูลเพื่อขออนุมัติการเข้าพื้นที่โรงงาน</p>
       </div>
       <div className="card" style={{ padding:24, marginBottom:16 }}>
-        <div className="sec-label">ข้อมูลผู้เข้าเยี่ยม</div>
+        <div className="sec-label">External Company / Visitor Information</div>
         <div className="g2" style={{ marginBottom:14 }}>
-          <Field label="ชื่อ-นามสกุล *" error={err.visitorName}><input className={`inp${err.visitorName?" err":""}`} placeholder="ชื่อเต็มของผู้เข้าเยี่ยม" value={f.visitorName} onChange={set("visitorName")}/></Field>
-          <Field label="บริษัท / องค์กร *" error={err.company}><input className={`inp${err.company?" err":""}`} placeholder="ชื่อบริษัทหรือหน่วยงาน" value={f.company} onChange={set("company")}/></Field>
+          <Field label="Visitor Name *" error={err.visitorName}><input className={`inp${err.visitorName?" err":""}`} placeholder="ชื่อเต็มของบุคคลภายนอก" value={f.visitorName} onChange={set("visitorName")}/></Field>
+          <Field label="Company Name *" error={err.company}><input className={`inp${err.company?" err":""}`} placeholder="ชื่อบริษัทหรือหน่วยงาน" value={f.company} onChange={set("company")}/></Field>
         </div>
-        <Field label="วัตถุประสงค์การเข้าพบ *" error={err.purpose}><textarea className={`inp${err.purpose?" err":""}`} placeholder="เช่น ประชุมติดตามงาน, ตรวจสอบ, ส่งของ..." value={f.purpose} onChange={set("purpose")}/></Field>
+        <Field label="Purpose of Visit *" error={err.purpose}><textarea className={`inp${err.purpose?" err":""}`} placeholder="เช่น ซ่อมแซมเครื่องจักร/อุปกรณ์, ตรวจสอบ, Sorting..." value={f.purpose} onChange={set("purpose")}/></Field>
         <div className="g3" style={{ marginTop:14 }}>
-          <Field label="วันที่เข้าพบ *" error={err.visitDate}><input type="date" className={`inp${err.visitDate?" err":""}`} value={f.visitDate} onChange={set("visitDate")}/></Field>
-          <Field label="เวลาเข้า *" error={err.enterTime}><input type="time" className={`inp${err.enterTime?" err":""}`} value={f.enterTime} onChange={set("enterTime")}/></Field>
-          <Field label="เวลาออก (ประมาณ)"><input type="time" className="inp" value={f.exitTime} onChange={set("exitTime")}/></Field>
+          <Field label="Date of Visit *" error={err.visitDate}><input type="date" className={`inp${err.visitDate?" err":""}`} value={f.visitDate} onChange={set("visitDate")}/></Field>
+          <Field label="Time In *" error={err.enterTime}><input type="time" className={`inp${err.enterTime?" err":""}`} value={f.enterTime} onChange={set("enterTime")}/></Field>
+          <Field label="Time Out (Around)"><input type="time" className="inp" value={f.exitTime} onChange={set("exitTime")}/></Field>
         </div>
       </div>
       <div className="card" style={{ padding:24, marginBottom:24 }}>
-        <div className="sec-label">ข้อมูลผู้ร้องขอ (พนักงาน)</div>
+        <div className="sec-label">Requester Information</div>
         <div className="g2" style={{ marginBottom:14 }}>
-          <Field label="ชื่อ-นามสกุลผู้ร้องขอ *" error={err.requesterName}><input className={`inp${err.requesterName?" err":""}`} placeholder="ชื่อพนักงาน" value={f.requesterName} onChange={set("requesterName")}/></Field>
-          <Field label="รหัสพนักงาน *" error={err.employeeId}><input className={`inp${err.employeeId?" err":""}`} placeholder="เช่น EMP-0042" value={f.employeeId} onChange={set("employeeId")}/></Field>
+          <Field label="Requester Name *" error={err.requesterName}><input className={`inp${err.requesterName?" err":""}`} placeholder="ชื่อพนักงาน" value={f.requesterName} onChange={set("requesterName")}/></Field>
+          <Field label="ID Employee *" error={err.employeeId}><input className={`inp${err.employeeId?" err":""}`} placeholder="เช่น AFBT00543" value={f.employeeId} onChange={set("employeeId")}/></Field>
         </div>
         <div className="g2">
-          <Field label="แผนก *" error={err.department}><input className={`inp${err.department?" err":""}`} placeholder="เช่น ฝ่ายผลิต, QC, Admin" value={f.department} onChange={set("department")}/></Field>
-          <Field label="อีเมลหัวหน้า (เพื่อส่ง Approve) *" error={err.supervisorEmail}><input type="email" className={`inp${err.supervisorEmail?" err":""}`} placeholder="supervisor@company.com" value={f.supervisorEmail} onChange={set("supervisorEmail")}/></Field>
+          <Field label="Department *" error={err.department}><input className={`inp${err.department?" err":""}`} placeholder="เช่น Seal Plate, QC, HR..." value={f.department} onChange={set("department")}/></Field>
+          <Field label="Manager’s Email (M1–M3 Level) for Approval *" error={err.supervisorEmail}><input type="email" className={`inp${err.supervisorEmail?" err":""}`} placeholder="manager@akitafb.co.th" value={f.supervisorEmail} onChange={set("supervisorEmail")}/></Field>
         </div>
       </div>
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
@@ -241,7 +241,7 @@ function ManagerView({ visitors, onApprove, onReject }) {
       <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:28 }}>
         <div style={{ width:42, height:42, borderRadius:11, background:"linear-gradient(135deg,rgba(245,158,11,.15),rgba(239,68,68,.15))", border:"1px solid rgba(245,158,11,.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🔑</div>
         <div>
-          <h2 style={{ fontSize:18, fontWeight:700 }}>หน้า Approve ของหัวหน้า</h2>
+          <h2 style={{ fontSize:18, fontWeight:700 }}>หน้า Approve</h2>
           <p style={{ fontSize:13, color:"var(--t2)", marginTop:2 }}>{pending.length === 0 ? "ไม่มีรายการรออนุมัติ" : `${pending.length} รายการรอการพิจารณา`}</p>
         </div>
       </div>
@@ -446,7 +446,7 @@ export default function App() {
           {tab==="admin"   && <AdminDashboard visitors={visitors}/>}
         </main>
         <footer style={{ borderTop:"1px solid var(--br)", background:"var(--s1)", padding:"11px 24px", textAlign:"center", fontSize:11.5, color:"var(--t3)" }}>
-          VisitorPass · ข้อมูลบันทึกใน Browser (localStorage)
+          Akita FB (Thailand) Co.,Ltd. · ข้อมูลบันทึกใน Browser (localStorage)
         </footer>
       </div>
       <Toast items={toasts} remove={id => setToasts(p => p.filter(t => t.id!==id))}/>
