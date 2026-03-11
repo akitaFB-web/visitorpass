@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 const STORAGE_KEY = "visitorpass-data-v1";
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFSAw-vT0N3P4xt3xYuUvdO6qlldTZxw-9z83tXuq8-2KAOsep4Lxm-rUWIjztE1kjEw/exec'; // ← ใส่ URL ของคุณตรงนี้
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyUYYtv_EBVr10uiJ0RrNX5f7IzAEg0tdi15rv7y8Tu95nQ77Qf7-nQDJUmKoGgar8V/exec'; // ← ใส่ URL ของคุณตรงนี้
 
 function loadVisitors() {
   try {
