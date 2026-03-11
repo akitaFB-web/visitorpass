@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 // ─── Local Storage (ใช้ได้จริงใน Browser) ────────────────────────────────────
 const STORAGE_KEY = "visitorpass-data-v1";
-const GAS_URL = 'https://script.google.com/macros/s/[YOUR_DEPLOYMENT_ID]/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFSAw-vT0N3P4xt3xYuUvdO6qlldTZxw-9z83tXuq8-2KAOsep4Lxm-rUWIjztE1kjEw/exec';
 
 function loadVisitors() {
   try {
