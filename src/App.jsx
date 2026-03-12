@@ -1,16 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const STORAGE_KEY = "visitorpass-data-v1";
+const ADMIN_SESSION_KEY = "visitorpass-admin-session";
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyUYYtv_EBVr10uiJ0RrNX5f7IzAEg0tdi15rv7y8Tu95nQ77Qf7-nQDJUmKoGgar8V/exec'; // ← ใส่ URL ของคุณ
 
 function loadVisitors() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
 }
 function saveVisitors(v) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(v)); } catch {}
+}
+function loadAdminSession() {
+  try { return localStorage.getItem(ADMIN_SESSION_KEY) === 'true'; } catch { return false; }
+}
+function saveAdminSession(v) {
+  try { localStorage.setItem(ADMIN_SESSION_KEY, v ? 'true' : ''); } catch {}
 }
 
 const genId = () => Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -28,13 +32,19 @@ function sendToGAS(payload) {
   try {
     const url = GAS_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
     const img = document.createElement('img');
-    img.src = url;
-    img.style.display = 'none';
+    img.src = url; img.style.display = 'none';
     document.body.appendChild(img);
     setTimeout(() => document.body.removeChild(img), 3000);
   } catch(e) { console.error('GAS error:', e); }
 }
 
+async function fetchFromGAS(params) {
+  const url = GAS_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return await res.json();
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const G = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
@@ -64,9 +74,9 @@ const G = () => (
     .btn-s{background:var(--s3);color:var(--t1);border:1.5px solid var(--br2);padding:10px 20px}
     .btn-s:hover:not(:disabled){border-color:var(--ac);color:var(--ac)}
     .btn-ok{background:var(--ag);color:#fff;padding:10px 22px}
-    .btn-ok:hover:not(:disabled){background:#059669;transform:translateY(-1px);box-shadow:0 4px 14px rgba(16,185,129,.35)}
+    .btn-ok:hover:not(:disabled){background:#059669;transform:translateY(-1px)}
     .btn-ng{background:var(--ae);color:#fff;padding:10px 22px}
-    .btn-ng:hover:not(:disabled){background:#dc2626;transform:translateY(-1px);box-shadow:0 4px 14px rgba(239,68,68,.35)}
+    .btn-ng:hover:not(:disabled){background:#dc2626;transform:translateY(-1px)}
     .btn-gh{background:transparent;color:var(--t2);padding:8px 14px;font-size:13px}
     .btn-gh:hover{color:var(--t1);background:var(--s2)}
     .card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);box-shadow:var(--sh)}
@@ -104,6 +114,7 @@ const G = () => (
     .progress-wrap{height:3px;background:var(--br);border-radius:2px;overflow:hidden;margin-top:8px}
     .progress-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--ac),var(--ab));animation:prog 3.5s linear forwards}
     .approve-card{background:linear-gradient(135deg,rgba(0,217,176,.06),rgba(14,165,233,.06));border:1.5px solid rgba(0,217,176,.25);border-radius:14px;padding:28px;}
+    .loader-spin{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;}
   `}</style>
 );
 
@@ -130,7 +141,7 @@ function Field({ label, error, children }) {
   );
 }
 
-// ─── หน้า Approve เฉพาะคำขอ (เข้าได้ด้วย token เท่านั้น) ───────────────────
+// ─── หน้า Token Approve (เข้าด้วยลิงก์ในเมลเท่านั้น) ─────────────────────────
 function TokenApprovePage({ visitors, onApprove, onReject }) {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
@@ -140,38 +151,31 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
   const [note, setNote] = useState("");
   const [done, setDone] = useState(null);
 
-  // ลิงก์ไม่ถูกต้อง
   if (!visitor) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ textAlign:"center", maxWidth:400 }} className="fu">
         <div style={{ fontSize:64, marginBottom:16 }}>🔒</div>
         <h2 style={{ fontSize:20, fontWeight:700, marginBottom:8 }}>ลิงก์ไม่ถูกต้องหรือหมดอายุ</h2>
-        <p style={{ color:"var(--t2)", fontSize:13.5 }}>ลิงก์นี้ใช้ไม่ได้แล้ว กรุณาติดต่อผู้ส่งคำร้อง</p>
+        <p style={{ color:"var(--t2)", fontSize:13.5 }}>กรุณาติดต่อผู้ส่งคำร้อง</p>
       </div>
     </div>
   );
 
-  // อนุมัติ/ปฏิเสธไปแล้ว
   if (visitor.status !== "pending" && !done) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ textAlign:"center", maxWidth:400 }} className="fu">
         <div style={{ fontSize:64, marginBottom:16 }}>{visitor.status==="approved"?"✅":"❌"}</div>
-        <h2 style={{ fontSize:20, fontWeight:700, marginBottom:8 }}>
-          {visitor.status==="approved" ? "อนุมัติไปแล้ว" : "ปฏิเสธไปแล้ว"}
-        </h2>
+        <h2 style={{ fontSize:20, fontWeight:700, marginBottom:8 }}>{visitor.status==="approved"?"อนุมัติไปแล้ว":"ปฏิเสธไปแล้ว"}</h2>
         <p style={{ color:"var(--t2)", fontSize:13.5 }}>คำร้องนี้ได้รับการพิจารณาแล้ว</p>
       </div>
     </div>
   );
 
-  // หลังกด Approve/Reject เสร็จ
   if (done) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ textAlign:"center", maxWidth:400 }} className="fu">
         <div style={{ fontSize:64, marginBottom:16 }}>{done==="approved"?"✅":"❌"}</div>
-        <h2 style={{ fontSize:20, fontWeight:700, marginBottom:8 }}>
-          {done==="approved" ? "อนุมัติเรียบร้อยแล้ว" : "ปฏิเสธเรียบร้อยแล้ว"}
-        </h2>
+        <h2 style={{ fontSize:20, fontWeight:700, marginBottom:8 }}>{done==="approved"?"อนุมัติเรียบร้อยแล้ว":"ปฏิเสธเรียบร้อยแล้ว"}</h2>
         <p style={{ color:"var(--t2)", fontSize:13.5 }}>ปิดหน้าต่างนี้ได้เลยครับ</p>
       </div>
     </div>
@@ -185,57 +189,30 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, background:"var(--bg)" }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ width:"100%", maxWidth:560 }} className="fu">
-        {/* Header */}
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:9, marginBottom:14 }}>
             <div style={{ width:36, height:36, borderRadius:9, fontSize:18, background:"linear-gradient(135deg,var(--ac),var(--ab))", display:"flex", alignItems:"center", justifyContent:"center" }}>🏭</div>
             <span style={{ fontWeight:800, fontSize:16 }}>VisitorPass</span>
           </div>
           <h1 style={{ fontSize:20, fontWeight:700, marginBottom:6 }}>คำร้องขอเข้าโรงงาน</h1>
-          <p style={{ color:"var(--t2)", fontSize:13 }}>กรุณาพิจารณาคำร้องด้านล่าง แล้วกดอนุมัติหรือปฏิเสธ</p>
+          <p style={{ color:"var(--t2)", fontSize:13 }}>กรุณาพิจารณาคำร้องด้านล่าง</p>
         </div>
-
-        {/* ข้อมูลคำร้อง */}
         <div className="approve-card" style={{ marginBottom:20 }}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px 24px" }}>
-            {[
-              ["👤 ผู้เข้าเยี่ยม", visitor.visitorName],
-              ["🏢 บริษัท", visitor.company],
-              ["🎯 วัตถุประสงค์", visitor.purpose],
-              ["📅 วันที่เข้าพบ", visitor.visitDate],
-              ["🕐 เวลา", `${visitor.enterTime}${visitor.exitTime?" – "+visitor.exitTime:""}`],
-              ["👷 ผู้ร้องขอ", `${visitor.requesterName} (${visitor.employeeId})`],
-              ["🏭 แผนก", visitor.department],
-              ["📤 ส่งคำร้องเมื่อ", thaiDate(visitor.submittedAt)],
-            ].map(([l,v]) => (
-              <div key={l}>
-                <div style={{ fontSize:11, color:"var(--t3)", marginBottom:3 }}>{l}</div>
-                <div style={{ fontSize:13.5, fontWeight:600 }}>{v||"-"}</div>
-              </div>
+            {[["👤 ผู้เข้าเยี่ยม",visitor.visitorName],["🏢 บริษัท",visitor.company],["🎯 วัตถุประสงค์",visitor.purpose],["📅 วันที่",visitor.visitDate],["🕐 เวลา",`${visitor.enterTime}${visitor.exitTime?" – "+visitor.exitTime:""}`],["👷 ผู้ร้องขอ",`${visitor.requesterName} (${visitor.employeeId})`],["🏭 แผนก",visitor.department],["📤 ส่งเมื่อ",thaiDate(visitor.submittedAt)]].map(([l,v]) => (
+              <div key={l}><div style={{ fontSize:11, color:"var(--t3)", marginBottom:3 }}>{l}</div><div style={{ fontSize:13.5, fontWeight:600 }}>{v||"-"}</div></div>
             ))}
           </div>
         </div>
-
-        {/* หมายเหตุ */}
-        <div style={{ marginBottom:20 }}>
-          <Field label="หมายเหตุ / เงื่อนไข (ถ้ามี)">
-            <textarea className="inp" placeholder="ระบุเหตุผลหรือเงื่อนไขเพิ่มเติม..." value={note} onChange={e => setNote(e.target.value)} style={{ minHeight:80 }}/>
-          </Field>
+        <Field label="หมายเหตุ (ถ้ามี)">
+          <textarea className="inp" placeholder="ระบุเหตุผลหรือเงื่อนไข..." value={note} onChange={e => setNote(e.target.value)} style={{ minHeight:80 }}/>
+        </Field>
+        <div style={{ display:"flex", gap:12, marginTop:20 }}>
+          <button className="btn btn-ng" onClick={() => setPanel("rejected")} style={{ flex:1, justifyContent:"center", fontSize:15, padding:"13px" }}>❌ ปฏิเสธ</button>
+          <button className="btn btn-ok" onClick={() => setPanel("approved")} style={{ flex:1, justifyContent:"center", fontSize:15, padding:"13px" }}>✅ อนุมัติ</button>
         </div>
-
-        {/* ปุ่ม */}
-        <div style={{ display:"flex", gap:12 }}>
-          <button className="btn btn-ng" onClick={() => setPanel("rejected")} style={{ flex:1, justifyContent:"center", fontSize:15, padding:"13px" }}>
-            ❌ ปฏิเสธ
-          </button>
-          <button className="btn btn-ok" onClick={() => setPanel("approved")} style={{ flex:1, justifyContent:"center", fontSize:15, padding:"13px" }}>
-            ✅ อนุมัติ
-          </button>
-        </div>
-
-        {/* Popup ยืนยัน */}
         {panel && (
           <div className="panel" onClick={e => e.target===e.currentTarget && setPanel(null)}>
             <div className="panel-box">
@@ -244,8 +221,8 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
                 <button className="btn btn-gh" onClick={() => setPanel(null)} style={{ padding:"4px 10px", fontSize:16 }}>✕</button>
               </div>
               <div className="panel-body">
-                <p style={{ color:"var(--t2)", fontSize:13.5, marginBottom:note?14:0 }}>{visitor.visitorName} — {visitor.company}</p>
-                {note && <div style={{ background:"var(--s2)", borderRadius:8, padding:"10px 14px", fontSize:13, color:"var(--t2)" }}>หมายเหตุ: {note}</div>}
+                <p style={{ color:"var(--t2)", fontSize:13.5 }}>{visitor.visitorName} — {visitor.company}</p>
+                {note && <div style={{ background:"var(--s2)", borderRadius:8, padding:"10px 14px", fontSize:13, color:"var(--t2)", marginTop:12 }}>หมายเหตุ: {note}</div>}
               </div>
               <div className="panel-foot">
                 <button className="btn btn-gh" onClick={() => setPanel(null)}>ยกเลิก</button>
@@ -257,6 +234,200 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── หน้า Admin Login ─────────────────────────────────────────────────────────
+function AdminLogin({ onLogin }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const login = async () => {
+    if (!password.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetchFromGAS({ action: 'getAll', password });
+      if (res.success) {
+        onLogin(password, res.visitors);
+      } else {
+        setError("รหัสผ่านไม่ถูกต้อง");
+      }
+    } catch {
+      setError("ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ width:"100%", maxWidth:380 }} className="fu">
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:64, height:64, borderRadius:16, marginBottom:16, background:"linear-gradient(135deg,rgba(0,217,176,.15),rgba(14,165,233,.15))", border:"1px solid rgba(0,217,176,.4)", fontSize:28 }}>🔐</div>
+          <h1 style={{ fontSize:22, fontWeight:700, marginBottom:6 }}>Admin Dashboard</h1>
+          <p style={{ color:"var(--t2)", fontSize:13.5 }}>ใส่รหัสผ่านเพื่อเข้าใช้งาน</p>
+        </div>
+        <div className="card" style={{ padding:28 }}>
+          <Field label="รหัสผ่าน" error={error}>
+            <input
+              type="password"
+              className={`inp${error?" err":""}`}
+              placeholder="กรอกรหัสผ่าน"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(""); }}
+              onKeyDown={e => e.key==="Enter" && login()}
+              autoFocus
+            />
+          </Field>
+          <button className="btn btn-p" onClick={login} disabled={loading||!password.trim()} style={{ width:"100%", justifyContent:"center", marginTop:16, fontSize:14 }}>
+            {loading ? <><div className="loader-spin"/> กำลังตรวจสอบ...</> : "🔓 เข้าสู่ระบบ"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── หน้า Admin Dashboard (ดูข้อมูลจาก Sheets) ───────────────────────────────
+function AdminDashboard({ password, initialVisitors, onLogout }) {
+  const [visitors, setVisitors] = useState(initialVisitors || []);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchFromGAS({ action: 'getAll', password });
+      if (res.success) {
+        setVisitors(res.visitors);
+        setLastUpdated(new Date());
+      }
+    } catch {}
+    setLoading(false);
+  }, [password]);
+
+  useEffect(() => {
+    // Auto refresh ทุก 60 วินาที
+    const interval = setInterval(refresh, 60000);
+    return () => clearInterval(interval);
+  }, [refresh]);
+
+  const stats = {
+    total:    visitors.length,
+    pending:  visitors.filter(v => v.status==="pending").length,
+    approved: visitors.filter(v => v.status==="approved").length,
+    rejected: visitors.filter(v => v.status==="rejected").length,
+  };
+
+  const list = visitors.filter(v => {
+    if (filter!=="all" && v.status!==filter) return false;
+    const q = search.toLowerCase();
+    return !q || [v.visitorName,v.company,v.department,v.requesterName].some(x => x?.toLowerCase().includes(q));
+  });
+
+  return (
+    <div className="fu" style={{ maxWidth:1100, margin:"0 auto", padding:"36px 24px 80px" }}>
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:14, marginBottom:28 }}>
+        <div>
+          <h2 style={{ fontSize:20, fontWeight:700, marginBottom:4 }}>🔐 Admin Dashboard</h2>
+          <p style={{ fontSize:12.5, color:"var(--t3)" }}>
+            อัปเดตล่าสุด: {lastUpdated.toLocaleTimeString("th-TH")}
+            {loading && <span style={{ marginLeft:8 }}><span className="loader-spin" style={{ width:12, height:12, borderWidth:2 }}/></span>}
+          </p>
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <button className="btn btn-s" onClick={refresh} disabled={loading} style={{ fontSize:13 }}>
+            🔄 รีเฟรช
+          </button>
+          <button className="btn btn-gh" onClick={onLogout} style={{ fontSize:13, border:"1.5px solid var(--br2)", borderRadius:8 }}>
+            🚪 ออกจากระบบ
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:24 }}>
+        {[{n:stats.total,l:"ทั้งหมด",c:"var(--ab)"},{n:stats.pending,l:"รออนุมัติ",c:"var(--aw)"},{n:stats.approved,l:"อนุมัติแล้ว",c:"var(--ag)"},{n:stats.rejected,l:"ปฏิเสธ",c:"var(--ae)"}].map(s => (
+          <div className="stat" key={s.l}><div className="stat-n" style={{ color:s.c }}>{s.n}</div><div className="stat-l">{s.l}</div></div>
+        ))}
+      </div>
+
+      {/* Filter + Search */}
+      <div style={{ display:"flex", gap:10, flexWrap:"wrap", alignItems:"center", marginBottom:14 }}>
+        <input className="inp" placeholder="🔍 ค้นหา ชื่อ / บริษัท / แผนก / ผู้ร้องขอ..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth:320 }}/>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {[["all","ทั้งหมด"],["pending","รออนุมัติ"],["approved","อนุมัติ"],["rejected","ปฏิเสธ"]].map(([k,l]) => (
+            <button key={k} className={`tab-btn${filter===k?" on":""}`} onClick={() => setFilter(k)} style={{ fontSize:12, padding:"7px 14px" }}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card" style={{ padding:0, overflow:"hidden" }}>
+        {list.length===0 ? (
+          <div className="empty">
+            <div style={{ fontSize:44, marginBottom:12, opacity:.4 }}>📋</div>
+            <p style={{ fontWeight:600, color:"var(--t2)" }}>ไม่พบข้อมูล</p>
+          </div>
+        ) : (
+          <div style={{ overflowX:"auto" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>รหัส</th><th>ผู้เข้าเยี่ยม</th><th>บริษัท</th>
+                  <th>วันที่ / เวลา</th><th>ผู้ร้องขอ</th><th>แผนก</th><th>สถานะ</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map(v => (
+                  <tr key={v.id}>
+                    <td><span style={{ fontFamily:"'DM Mono',monospace", fontSize:11.5, color:"var(--t3)" }}>{v.id}</span></td>
+                    <td style={{ fontWeight:600 }}>{v.visitorName}</td>
+                    <td style={{ color:"var(--t2)" }}>{v.company}</td>
+                    <td>
+                      <div style={{ fontSize:12.5 }}>{v.visitDate}</div>
+                      <div style={{ fontSize:11.5, color:"var(--t3)" }}>{v.enterTime}{v.exitTime?` – ${v.exitTime}`:""}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize:12.5 }}>{v.requesterName}</div>
+                      <div style={{ fontSize:11.5, color:"var(--t3)" }}>{v.employeeId}</div>
+                    </td>
+                    <td style={{ fontSize:12.5, color:"var(--t2)" }}>{v.department}</td>
+                    <td><span className="badge" style={{ color:STATUS[v.status]?.color, background:STATUS[v.status]?.bg }}>{STATUS[v.status]?.label}</span></td>
+                    <td><button className="btn btn-gh" onClick={() => setDetail(v)} style={{ fontSize:12, padding:"5px 12px" }}>ดู →</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Detail Panel */}
+      {detail && (
+        <div className="panel" onClick={e => e.target===e.currentTarget && setDetail(null)}>
+          <div className="panel-box" style={{ maxWidth:540 }}>
+            <div className="panel-head">
+              <div><div style={{ fontWeight:700, fontSize:16 }}>รายละเอียดคำร้อง</div><div style={{ fontSize:11.5, color:"var(--t3)", fontFamily:"'DM Mono',monospace", marginTop:3 }}>{detail.id}</div></div>
+              <button className="btn btn-gh" onClick={() => setDetail(null)} style={{ padding:"4px 10px", fontSize:16 }}>✕</button>
+            </div>
+            <div className="panel-body" style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {[["👤 ผู้เข้าเยี่ยม",detail.visitorName],["🏢 บริษัท",detail.company],["🎯 วัตถุประสงค์",detail.purpose],["📅 วันที่",detail.visitDate],["🕐 เวลา",`${detail.enterTime}${detail.exitTime?" – "+detail.exitTime:""}`],["👷 ผู้ร้องขอ",`${detail.requesterName} (${detail.employeeId})`],["🏭 แผนก",detail.department],["📧 อีเมลหัวหน้า",detail.supervisorEmail],["📤 ส่งเมื่อ",thaiDate(detail.submittedAt)],...(detail.approveNote?[["📝 หมายเหตุ",detail.approveNote]]:[]),...(detail.approvedAt?[["🕐 พิจารณาเมื่อ",thaiDate(detail.approvedAt)]]:[])].map(([l,v]) => (
+                <div key={l} style={{ display:"flex", gap:12 }}><div style={{ fontSize:12, color:"var(--t3)", width:180, flexShrink:0 }}>{l}</div><div style={{ fontSize:13, fontWeight:500 }}>{v}</div></div>
+              ))}
+              <div className="divider" style={{ margin:"4px 0" }}/>
+              <div style={{ display:"flex", justifyContent:"center" }}><span className="badge" style={{ color:STATUS[detail.status]?.color, background:STATUS[detail.status]?.bg, fontSize:13, padding:"6px 18px" }}>{STATUS[detail.status]?.label}</span></div>
+            </div>
+            <div className="panel-foot"><button className="btn btn-s" onClick={() => setDetail(null)}>ปิด</button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -288,7 +459,7 @@ function EmployeeForm({ onSubmit }) {
     setErr(e);
     if (Object.keys(e).length) return;
     const token = genToken();
-    const v = { id: genId(), token, ...f, status:"pending", submittedAt:now() };
+    const v = { id:genId(), token, ...f, status:"pending", submittedAt:now() };
     onSubmit(v);
     setDone(v);
     setF(blank);
@@ -348,93 +519,27 @@ function EmployeeForm({ onSubmit }) {
   );
 }
 
-// ─── Admin Dashboard ──────────────────────────────────────────────────────────
-function AdminDashboard({ visitors }) {
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [detail, setDetail] = useState(null);
-
-  const stats = { total:visitors.length, pending:visitors.filter(v=>v.status==="pending").length, approved:visitors.filter(v=>v.status==="approved").length, rejected:visitors.filter(v=>v.status==="rejected").length };
-
-  const list = visitors.filter(v => {
-    if (filter!=="all" && v.status!==filter) return false;
-    const q = search.toLowerCase();
-    return !q || [v.visitorName,v.company,v.department,v.requesterName].some(x => x?.toLowerCase().includes(q));
-  });
-
-  return (
-    <div className="fu" style={{ maxWidth:1040, margin:"0 auto" }}>
-      <div style={{ marginBottom:28 }}>
-        <h2 style={{ fontSize:18, fontWeight:700, marginBottom:4 }}>Admin Dashboard</h2>
-        <p style={{ fontSize:13, color:"var(--t2)" }}>ภาพรวมบุคคลภายนอกทั้งหมด</p>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:24 }}>
-        {[{n:stats.total,l:"ทั้งหมด",c:"var(--ab)"},{n:stats.pending,l:"รออนุมัติ",c:"var(--aw)"},{n:stats.approved,l:"อนุมัติแล้ว",c:"var(--ag)"},{n:stats.rejected,l:"ปฏิเสธ",c:"var(--ae)"}].map(s => (
-          <div className="stat" key={s.l}><div className="stat-n" style={{ color:s.c }}>{s.n}</div><div className="stat-l">{s.l}</div></div>
-        ))}
-      </div>
-      <div style={{ display:"flex", gap:10, flexWrap:"wrap", alignItems:"center", marginBottom:14 }}>
-        <input className="inp" placeholder="🔍 ค้นหา ชื่อ / บริษัท / แผนก..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth:280 }}/>
-        <div style={{ display:"flex", gap:6 }}>
-          {[["all","ทั้งหมด"],["pending","รออนุมัติ"],["approved","อนุมัติ"],["rejected","ปฏิเสธ"]].map(([k,l]) => (
-            <button key={k} className={`tab-btn${filter===k?" on":""}`} onClick={() => setFilter(k)} style={{ fontSize:12, padding:"7px 14px" }}>{l}</button>
-          ))}
-        </div>
-      </div>
-      <div className="card" style={{ padding:0, overflow:"hidden" }}>
-        {list.length===0 ? <div className="empty"><p>ไม่พบข้อมูล</p></div> : (
-          <div style={{ overflowX:"auto" }}>
-            <table>
-              <thead><tr><th>รหัส</th><th>ผู้เข้าเยี่ยม</th><th>บริษัท</th><th>วันที่</th><th>แผนก</th><th>สถานะ</th><th></th></tr></thead>
-              <tbody>
-                {list.map(v => (
-                  <tr key={v.id}>
-                    <td><span style={{ fontFamily:"'DM Mono',monospace", fontSize:11.5, color:"var(--t3)" }}>{v.id}</span></td>
-                    <td style={{ fontWeight:600 }}>{v.visitorName}</td>
-                    <td style={{ color:"var(--t2)" }}>{v.company}</td>
-                    <td style={{ fontSize:12.5 }}>{v.visitDate}</td>
-                    <td style={{ fontSize:12.5, color:"var(--t2)" }}>{v.department}</td>
-                    <td><span className="badge" style={{ color:STATUS[v.status].color, background:STATUS[v.status].bg }}>{STATUS[v.status].label}</span></td>
-                    <td><button className="btn btn-gh" onClick={() => setDetail(v)} style={{ fontSize:12, padding:"5px 12px" }}>ดู →</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-      {detail && (
-        <div className="panel" onClick={e => e.target===e.currentTarget && setDetail(null)}>
-          <div className="panel-box" style={{ maxWidth:540 }}>
-            <div className="panel-head">
-              <div><div style={{ fontWeight:700, fontSize:16 }}>รายละเอียดคำร้อง</div><div style={{ fontSize:11.5, color:"var(--t3)", fontFamily:"'DM Mono',monospace", marginTop:3 }}>{detail.id}</div></div>
-              <button className="btn btn-gh" onClick={() => setDetail(null)} style={{ padding:"4px 10px", fontSize:16 }}>✕</button>
-            </div>
-            <div className="panel-body" style={{ display:"flex", flexDirection:"column", gap:12 }}>
-              {[["👤 ผู้เข้าเยี่ยม",detail.visitorName],["🏢 บริษัท",detail.company],["🎯 วัตถุประสงค์",detail.purpose],["📅 วันที่",detail.visitDate],["🕐 เวลา",`${detail.enterTime}${detail.exitTime?" – "+detail.exitTime:""}`],["👷 ผู้ร้องขอ",`${detail.requesterName} (${detail.employeeId})`],["🏭 แผนก",detail.department],["📤 ส่งเมื่อ",thaiDate(detail.submittedAt)],...(detail.approveNote?[["📝 หมายเหตุ",detail.approveNote]]:[])].map(([l,v]) => (
-                <div key={l} style={{ display:"flex", gap:12 }}><div style={{ fontSize:12, color:"var(--t3)", width:180, flexShrink:0 }}>{l}</div><div style={{ fontSize:13, fontWeight:500 }}>{v}</div></div>
-              ))}
-              <div className="divider" style={{ margin:"4px 0" }}/>
-              <div style={{ display:"flex", justifyContent:"center" }}><span className="badge" style={{ color:STATUS[detail.status].color, background:STATUS[detail.status].bg, fontSize:13, padding:"6px 18px" }}>{STATUS[detail.status].label}</span></div>
-            </div>
-            <div className="panel-foot"><button className="btn btn-s" onClick={() => setDetail(null)}>ปิด</button></div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Root App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("form");
   const [visitors, setVisitors] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminVisitors, setAdminVisitors] = useState([]);
 
   const params = new URLSearchParams(window.location.search);
   const isApproveLink = params.get('id') && params.get('token');
+  const isAdminLink = params.get('admin') === '1';
 
-  useEffect(() => { setVisitors(loadVisitors()); }, []);
+  useEffect(() => {
+    setVisitors(loadVisitors());
+    if (loadAdminSession()) setAdminLoggedIn(true);
+  }, []);
+
+  useEffect(() => {
+    if (isAdminLink) setTab("admin");
+  }, [isAdminLink]);
 
   const toast = (msg, type="ok") => {
     const id = Date.now();
@@ -464,7 +569,21 @@ export default function App() {
     sendToGAS({ action:'reject', id, note });
   };
 
-  // ถ้ามี ?id=...&token=... ใน URL → แสดงหน้า Approve เฉพาะ ไม่มี Nav
+  const handleAdminLogin = (password, visitors) => {
+    setAdminPassword(password);
+    setAdminVisitors(visitors);
+    setAdminLoggedIn(true);
+    saveAdminSession(true);
+  };
+
+  const handleAdminLogout = () => {
+    setAdminLoggedIn(false);
+    setAdminPassword("");
+    saveAdminSession(false);
+    setTab("form");
+  };
+
+  // หน้า Token Approve (เข้าด้วยลิงก์จากเมล)
   if (isApproveLink) return (
     <>
       <G/>
@@ -473,7 +592,8 @@ export default function App() {
     </>
   );
 
-  return (
+  // หน้า Admin (เข้าด้วย ?admin=1)
+  if (tab === "admin") return (
     <>
       <G/>
       <div style={{ minHeight:"100vh" }}>
@@ -483,16 +603,33 @@ export default function App() {
               <div style={{ width:32, height:32, borderRadius:8, fontSize:17, background:"linear-gradient(135deg,var(--ac),var(--ab))", display:"flex", alignItems:"center", justifyContent:"center" }}>🏭</div>
               <span style={{ fontWeight:800, fontSize:15 }}>VisitorPass</span>
             </div>
-            <nav style={{ display:"flex", gap:4 }}>
-              {[{id:"form",label:"📝 กรอกคำร้องขอ"},{id:"admin",label:"📊 Dashboard"}].map(t => (
-                <button key={t.id} className={`tab-btn${tab===t.id?" on":""}`} onClick={() => setTab(t.id)}>{t.label}</button>
-              ))}
-            </nav>
+            <button className="btn btn-gh" onClick={() => setTab("form")} style={{ fontSize:13 }}>← กลับหน้าหลัก</button>
+          </div>
+        </header>
+        {adminLoggedIn
+          ? <AdminDashboard password={adminPassword} initialVisitors={adminVisitors} onLogout={handleAdminLogout}/>
+          : <AdminLogin onLogin={handleAdminLogin}/>
+        }
+      </div>
+      <Toast items={toasts} remove={id => setToasts(p => p.filter(t => t.id!==id))}/>
+    </>
+  );
+
+  // หน้าหลัก (พนักงานกรอกฟอร์ม)
+  return (
+    <>
+      <G/>
+      <div style={{ minHeight:"100vh" }}>
+        <header style={{ background:"var(--s1)", borderBottom:"1px solid var(--br)", position:"sticky", top:0, zIndex:100 }}>
+          <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:58 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+              <div style={{ width:32, height:32, borderRadius:8, fontSize:17, background:"linear-gradient(135deg,var(--ac),var(--ab))", display:"flex", alignItems:"center", justifyContent:"center" }}>🏭</div>
+              <span style={{ fontWeight:800, fontSize:15 }}>VisitorPass</span>
+            </div>
           </div>
         </header>
         <main style={{ maxWidth:1100, margin:"0 auto", padding:"36px 24px 80px" }}>
-          {tab==="form"  && <EmployeeForm   onSubmit={handleSubmit}/>}
-          {tab==="admin" && <AdminDashboard visitors={visitors}/>}
+          <EmployeeForm onSubmit={handleSubmit}/>
         </main>
         <footer style={{ borderTop:"1px solid var(--br)", background:"var(--s1)", padding:"11px 24px", textAlign:"center", fontSize:11.5, color:"var(--t3)" }}>
           VisitorPass · ระบบลงทะเบียนบุคคลภายนอก
