@@ -600,7 +600,6 @@ export default function App() {
     setAdminLoggedIn(false);
     setAdminPassword("");
     saveAdminSession(false);
-    setTab("form");
   };
 
   // หน้า Token Approve
