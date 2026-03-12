@@ -17,15 +17,15 @@ function saveAdminSession(v) {
   try { localStorage.setItem(ADMIN_SESSION_KEY, v ? 'true' : ''); } catch {}
 }
 
-const genId = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+const genId    = () => Math.random().toString(36).slice(2, 10).toUpperCase();
 const genToken = () => Math.random().toString(36).slice(2, 18);
-const now = () => new Date().toISOString();
-const thaiDate = (iso) => iso ? new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "-";
+const now      = () => new Date().toISOString();
+const thaiDate = (iso) => iso ? new Date(iso).toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" }) : "-";
 
 const STATUS = {
-  pending:  { label: "รออนุมัติ",   color: "#f59e0b", bg: "rgba(245,158,11,.12)" },
-  approved: { label: "อนุมัติแล้ว", color: "#10b981", bg: "rgba(16,185,129,.12)" },
-  rejected: { label: "ปฏิเสธ",      color: "#ef4444", bg: "rgba(239,68,68,.12)"  },
+  pending:  { label:"รออนุมัติ",   color:"#f59e0b", bg:"rgba(245,158,11,.12)" },
+  approved: { label:"อนุมัติแล้ว", color:"#10b981", bg:"rgba(16,185,129,.12)" },
+  rejected: { label:"ปฏิเสธ",      color:"#ef4444", bg:"rgba(239,68,68,.12)"  },
 };
 
 function sendToGAS(payload) {
@@ -77,12 +77,13 @@ const G = () => (
     .btn-ok:hover:not(:disabled){background:#059669;transform:translateY(-1px)}
     .btn-ng{background:var(--ae);color:#fff;padding:10px 22px}
     .btn-ng:hover:not(:disabled){background:#dc2626;transform:translateY(-1px)}
+    .btn-del{background:rgba(239,68,68,.12);color:var(--ae);border:1px solid rgba(239,68,68,.25);padding:6px 14px;font-size:12px;border-radius:7px;}
+    .btn-del:hover:not(:disabled){background:var(--ae);color:#fff;}
     .btn-gh{background:transparent;color:var(--t2);padding:8px 14px;font-size:13px}
     .btn-gh:hover{color:var(--t1);background:var(--s2)}
     .card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r);box-shadow:var(--sh)}
     .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600;}
     .badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
-    .tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:6px;font-size:11.5px;font-weight:500;background:var(--s3);color:var(--t2);border:1px solid var(--br);}
     .divider{height:1px;background:var(--br);margin:18px 0}
     .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
@@ -95,7 +96,7 @@ const G = () => (
     .err-msg{font-size:11px;color:var(--ae)}
     table{width:100%;border-collapse:collapse}
     th{background:var(--s2);color:var(--t3);font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:10px 16px;text-align:left;}
-    td{padding:12px 16px;border-bottom:1px solid var(--br);font-size:13px;vertical-align:middle}
+    td{padding:11px 16px;border-bottom:1px solid var(--br);font-size:13px;vertical-align:middle}
     tr:last-child td{border-bottom:none}
     tr:hover td{background:rgba(255,255,255,.018)}
     .tab-btn{padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;border:1.5px solid transparent;background:transparent;color:var(--t3);transition:all .18s;font-family:inherit;white-space:nowrap;}
@@ -115,6 +116,7 @@ const G = () => (
     .progress-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--ac),var(--ab));animation:prog 3.5s linear forwards}
     .approve-card{background:linear-gradient(135deg,rgba(0,217,176,.06),rgba(14,165,233,.06));border:1.5px solid rgba(0,217,176,.25);border-radius:14px;padding:28px;}
     .loader-spin{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;}
+    .danger-box{background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);border-radius:10px;padding:16px 20px;}
   `}</style>
 );
 
@@ -141,15 +143,15 @@ function Field({ label, error, children }) {
   );
 }
 
-// ─── หน้า Token Approve (เข้าด้วยลิงก์ในเมลเท่านั้น) ─────────────────────────
+// ─── Token Approve Page ───────────────────────────────────────────────────────
 function TokenApprovePage({ visitors, onApprove, onReject }) {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
-  const token = params.get('token');
+  const params  = new URLSearchParams(window.location.search);
+  const id      = params.get('id');
+  const token   = params.get('token');
   const visitor = visitors.find(v => v.id === id && v.token === token);
   const [panel, setPanel] = useState(null);
-  const [note, setNote] = useState("");
-  const [done, setDone] = useState(null);
+  const [note,  setNote]  = useState("");
+  const [done,  setDone]  = useState(null);
 
   if (!visitor) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
@@ -184,8 +186,7 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
   const confirm = (action) => {
     if (action==="approved") onApprove(visitor.id, note);
     else onReject(visitor.id, note);
-    setDone(action);
-    setPanel(null);
+    setDone(action); setPanel(null);
   };
 
   return (
@@ -238,26 +239,20 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
   );
 }
 
-// ─── หน้า Admin Login ─────────────────────────────────────────────────────────
+// ─── Admin Login ──────────────────────────────────────────────────────────────
 function AdminLogin({ onLogin }) {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
 
   const login = async () => {
     if (!password.trim()) return;
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
-      const res = await fetchFromGAS({ action: 'getAll', password });
-      if (res.success) {
-        onLogin(password, res.visitors);
-      } else {
-        setError("รหัสผ่านไม่ถูกต้อง");
-      }
-    } catch {
-      setError("ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่");
-    }
+      const res = await fetchFromGAS({ action:'getAll', password });
+      if (res.success) onLogin(password, res.visitors);
+      else setError("รหัสผ่านไม่ถูกต้อง");
+    } catch { setError("ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่"); }
     setLoading(false);
   };
 
@@ -271,15 +266,9 @@ function AdminLogin({ onLogin }) {
         </div>
         <div className="card" style={{ padding:28 }}>
           <Field label="รหัสผ่าน" error={error}>
-            <input
-              type="password"
-              className={`inp${error?" err":""}`}
-              placeholder="กรอกรหัสผ่าน"
-              value={password}
+            <input type="password" className={`inp${error?" err":""}`} placeholder="กรอกรหัสผ่าน" value={password}
               onChange={e => { setPassword(e.target.value); setError(""); }}
-              onKeyDown={e => e.key==="Enter" && login()}
-              autoFocus
-            />
+              onKeyDown={e => e.key==="Enter" && login()} autoFocus/>
           </Field>
           <button className="btn btn-p" onClick={login} disabled={loading||!password.trim()} style={{ width:"100%", justifyContent:"center", marginTop:16, fontSize:14 }}>
             {loading ? <><div className="loader-spin"/> กำลังตรวจสอบ...</> : "🔓 เข้าสู่ระบบ"}
@@ -290,32 +279,45 @@ function AdminLogin({ onLogin }) {
   );
 }
 
-// ─── หน้า Admin Dashboard (ดูข้อมูลจาก Sheets) ───────────────────────────────
-function AdminDashboard({ password, initialVisitors, onLogout }) {
-  const [visitors, setVisitors] = useState(initialVisitors || []);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [detail, setDetail] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+// ─── Admin Dashboard ──────────────────────────────────────────────────────────
+function AdminDashboard({ password, initialVisitors, onLogout, toast }) {
+  const [visitors,     setVisitors]     = useState(initialVisitors || []);
+  const [filter,       setFilter]       = useState("all");
+  const [search,       setSearch]       = useState("");
+  const [detail,       setDetail]       = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting,     setDeleting]     = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [lastUpdated,  setLastUpdated]  = useState(new Date());
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchFromGAS({ action: 'getAll', password });
-      if (res.success) {
-        setVisitors(res.visitors);
-        setLastUpdated(new Date());
-      }
+      const res = await fetchFromGAS({ action:'getAll', password });
+      if (res.success) { setVisitors(res.visitors); setLastUpdated(new Date()); }
     } catch {}
     setLoading(false);
   }, [password]);
 
   useEffect(() => {
-    // Auto refresh ทุก 60 วินาที
     const interval = setInterval(refresh, 60000);
     return () => clearInterval(interval);
   }, [refresh]);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      sendToGAS({ action:'delete', id:deleteTarget.id, password });
+      setVisitors(prev => prev.filter(v => v.id !== deleteTarget.id));
+      toast(`🗑️ ลบข้อมูลของ ${deleteTarget.visitorName} แล้ว`);
+      setDeleteTarget(null);
+      setDetail(null);
+    } catch {
+      toast("❌ ลบไม่สำเร็จ กรุณาลองใหม่", "er");
+    }
+    setDeleting(false);
+  };
 
   const stats = {
     total:    visitors.length,
@@ -338,16 +340,12 @@ function AdminDashboard({ password, initialVisitors, onLogout }) {
           <h2 style={{ fontSize:20, fontWeight:700, marginBottom:4 }}>🔐 Admin Dashboard</h2>
           <p style={{ fontSize:12.5, color:"var(--t3)" }}>
             อัปเดตล่าสุด: {lastUpdated.toLocaleTimeString("th-TH")}
-            {loading && <span style={{ marginLeft:8 }}><span className="loader-spin" style={{ width:12, height:12, borderWidth:2 }}/></span>}
+            {loading && <span style={{ marginLeft:8, display:"inline-block" }}><span className="loader-spin" style={{ width:12, height:12, borderWidth:2, verticalAlign:"middle" }}/></span>}
           </p>
         </div>
         <div style={{ display:"flex", gap:10 }}>
-          <button className="btn btn-s" onClick={refresh} disabled={loading} style={{ fontSize:13 }}>
-            🔄 รีเฟรช
-          </button>
-          <button className="btn btn-gh" onClick={onLogout} style={{ fontSize:13, border:"1.5px solid var(--br2)", borderRadius:8 }}>
-            🚪 ออกจากระบบ
-          </button>
+          <button className="btn btn-s" onClick={refresh} disabled={loading} style={{ fontSize:13 }}>🔄 รีเฟรช</button>
+          <button className="btn btn-gh" onClick={onLogout} style={{ fontSize:13, border:"1.5px solid var(--br2)", borderRadius:8 }}>🚪 ออกจากระบบ</button>
         </div>
       </div>
 
@@ -371,18 +369,12 @@ function AdminDashboard({ password, initialVisitors, onLogout }) {
       {/* Table */}
       <div className="card" style={{ padding:0, overflow:"hidden" }}>
         {list.length===0 ? (
-          <div className="empty">
-            <div style={{ fontSize:44, marginBottom:12, opacity:.4 }}>📋</div>
-            <p style={{ fontWeight:600, color:"var(--t2)" }}>ไม่พบข้อมูล</p>
-          </div>
+          <div className="empty"><div style={{ fontSize:44, marginBottom:12, opacity:.4 }}>📋</div><p style={{ fontWeight:600, color:"var(--t2)" }}>ไม่พบข้อมูล</p></div>
         ) : (
           <div style={{ overflowX:"auto" }}>
             <table>
               <thead>
-                <tr>
-                  <th>รหัส</th><th>ผู้เข้าเยี่ยม</th><th>บริษัท</th>
-                  <th>วันที่ / เวลา</th><th>ผู้ร้องขอ</th><th>แผนก</th><th>สถานะ</th><th></th>
-                </tr>
+                <tr><th>รหัส</th><th>ผู้เข้าเยี่ยม</th><th>บริษัท</th><th>วันที่ / เวลา</th><th>ผู้ร้องขอ</th><th>แผนก</th><th>สถานะ</th><th></th></tr>
               </thead>
               <tbody>
                 {list.map(v => (
@@ -400,7 +392,12 @@ function AdminDashboard({ password, initialVisitors, onLogout }) {
                     </td>
                     <td style={{ fontSize:12.5, color:"var(--t2)" }}>{v.department}</td>
                     <td><span className="badge" style={{ color:STATUS[v.status]?.color, background:STATUS[v.status]?.bg }}>{STATUS[v.status]?.label}</span></td>
-                    <td><button className="btn btn-gh" onClick={() => setDetail(v)} style={{ fontSize:12, padding:"5px 12px" }}>ดู →</button></td>
+                    <td>
+                      <div style={{ display:"flex", gap:6 }}>
+                        <button className="btn btn-gh" onClick={() => setDetail(v)} style={{ fontSize:12, padding:"5px 12px" }}>ดู →</button>
+                        <button className="btn btn-del" onClick={() => setDeleteTarget(v)}>🗑️ ลบ</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -424,7 +421,36 @@ function AdminDashboard({ password, initialVisitors, onLogout }) {
               <div className="divider" style={{ margin:"4px 0" }}/>
               <div style={{ display:"flex", justifyContent:"center" }}><span className="badge" style={{ color:STATUS[detail.status]?.color, background:STATUS[detail.status]?.bg, fontSize:13, padding:"6px 18px" }}>{STATUS[detail.status]?.label}</span></div>
             </div>
-            <div className="panel-foot"><button className="btn btn-s" onClick={() => setDetail(null)}>ปิด</button></div>
+            <div className="panel-foot" style={{ justifyContent:"space-between" }}>
+              <button className="btn btn-del" onClick={() => { setDeleteTarget(detail); setDetail(null); }}>🗑️ ลบข้อมูลนี้</button>
+              <button className="btn btn-s" onClick={() => setDetail(null)}>ปิด</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Panel */}
+      {deleteTarget && (
+        <div className="panel" onClick={e => e.target===e.currentTarget && !deleting && setDeleteTarget(null)}>
+          <div className="panel-box" style={{ maxWidth:440 }}>
+            <div className="panel-head">
+              <div style={{ fontWeight:700, fontSize:16 }}>🗑️ ยืนยันการลบ</div>
+              <button className="btn btn-gh" onClick={() => !deleting && setDeleteTarget(null)} style={{ padding:"4px 10px", fontSize:16 }}>✕</button>
+            </div>
+            <div className="panel-body">
+              <div className="danger-box" style={{ marginBottom:16 }}>
+                <p style={{ fontSize:13.5, fontWeight:600, marginBottom:4 }}>{deleteTarget.visitorName}</p>
+                <p style={{ fontSize:12.5, color:"var(--t2)" }}>{deleteTarget.company} · {deleteTarget.visitDate}</p>
+                <p style={{ fontSize:12.5, color:"var(--t2)" }}>ผู้ร้องขอ: {deleteTarget.requesterName} ({deleteTarget.department})</p>
+              </div>
+              <p style={{ fontSize:13, color:"var(--t3)" }}>ข้อมูลนี้จะถูกลบออกจาก Google Sheets ถาวร ไม่สามารถกู้คืนได้</p>
+            </div>
+            <div className="panel-foot">
+              <button className="btn btn-gh" onClick={() => !deleting && setDeleteTarget(null)} disabled={deleting}>ยกเลิก</button>
+              <button className="btn btn-ng" onClick={handleDelete} disabled={deleting}>
+                {deleting ? <><div className="loader-spin"/> กำลังลบ...</> : "🗑️ ยืนยันลบ"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -432,11 +458,11 @@ function AdminDashboard({ password, initialVisitors, onLogout }) {
   );
 }
 
-// ─── ฟอร์มกรอกข้อมูล ─────────────────────────────────────────────────────────
+// ─── Employee Form ────────────────────────────────────────────────────────────
 function EmployeeForm({ onSubmit }) {
   const blank = { visitorName:"", company:"", purpose:"", visitDate:"", enterTime:"", exitTime:"", requesterName:"", department:"", employeeId:"", supervisorEmail:"" };
-  const [f, setF] = useState(blank);
-  const [err, setErr] = useState({});
+  const [f,    setF]    = useState(blank);
+  const [err,  setErr]  = useState({});
   const [done, setDone] = useState(null);
   const set = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
@@ -521,25 +547,22 @@ function EmployeeForm({ onSubmit }) {
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [tab, setTab] = useState("form");
-  const [visitors, setVisitors] = useState([]);
-  const [toasts, setToasts] = useState([]);
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
-  const [adminPassword, setAdminPassword] = useState("");
-  const [adminVisitors, setAdminVisitors] = useState([]);
+  const [tab,          setTab]          = useState("form");
+  const [visitors,     setVisitors]     = useState([]);
+  const [toasts,       setToasts]       = useState([]);
+  const [adminLoggedIn,setAdminLoggedIn]= useState(false);
+  const [adminPassword,setAdminPassword]= useState("");
+  const [adminVisitors,setAdminVisitors]= useState([]);
 
-  const params = new URLSearchParams(window.location.search);
+  const params        = new URLSearchParams(window.location.search);
   const isApproveLink = params.get('id') && params.get('token');
-  const isAdminLink = params.get('admin') === '1';
+  const isAdminLink   = params.get('admin') === '1';
 
   useEffect(() => {
     setVisitors(loadVisitors());
     if (loadAdminSession()) setAdminLoggedIn(true);
-  }, []);
-
-  useEffect(() => {
     if (isAdminLink) setTab("admin");
-  }, [isAdminLink]);
+  }, []);
 
   const toast = (msg, type="ok") => {
     const id = Date.now();
@@ -549,23 +572,20 @@ export default function App() {
 
   const handleSubmit = (v) => {
     const next = [v, ...visitors];
-    setVisitors(next);
-    saveVisitors(next);
+    setVisitors(next); saveVisitors(next);
     sendToGAS({ action:'submit', visitor:v });
     toast(`✅ ส่งคำร้องสำเร็จ รหัส: ${v.id}`);
   };
 
   const handleApprove = (id, note) => {
     const next = visitors.map(v => v.id===id ? { ...v, status:"approved", approveNote:note, approvedAt:now() } : v);
-    setVisitors(next);
-    saveVisitors(next);
+    setVisitors(next); saveVisitors(next);
     sendToGAS({ action:'approve', id, note });
   };
 
   const handleReject = (id, note) => {
     const next = visitors.map(v => v.id===id ? { ...v, status:"rejected", approveNote:note, approvedAt:now() } : v);
-    setVisitors(next);
-    saveVisitors(next);
+    setVisitors(next); saveVisitors(next);
     sendToGAS({ action:'reject', id, note });
   };
 
@@ -583,7 +603,7 @@ export default function App() {
     setTab("form");
   };
 
-  // หน้า Token Approve (เข้าด้วยลิงก์จากเมล)
+  // หน้า Token Approve
   if (isApproveLink) return (
     <>
       <G/>
@@ -592,7 +612,7 @@ export default function App() {
     </>
   );
 
-  // หน้า Admin (เข้าด้วย ?admin=1)
+  // หน้า Admin
   if (tab === "admin") return (
     <>
       <G/>
@@ -607,7 +627,7 @@ export default function App() {
           </div>
         </header>
         {adminLoggedIn
-          ? <AdminDashboard password={adminPassword} initialVisitors={adminVisitors} onLogout={handleAdminLogout}/>
+          ? <AdminDashboard password={adminPassword} initialVisitors={adminVisitors} onLogout={handleAdminLogout} toast={toast}/>
           : <AdminLogin onLogin={handleAdminLogin}/>
         }
       </div>
@@ -615,7 +635,7 @@ export default function App() {
     </>
   );
 
-  // หน้าหลัก (พนักงานกรอกฟอร์ม)
+  // หน้าพนักงาน
   return (
     <>
       <G/>
