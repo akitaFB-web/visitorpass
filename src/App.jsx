@@ -201,9 +201,9 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
               <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
-  </div>
-  <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
-</div>
+            </div>
+            <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
+          </div>
           </div>
           <h1 style={{ fontSize:20, fontWeight:700, marginBottom:6 }}>คำร้องขอเข้าโรงงาน</h1>
           <p style={{ color:"var(--t2)", fontSize:13 }}>กรุณาพิจารณาคำร้องด้านล่าง</p>
@@ -760,9 +760,13 @@ export default function App() {
       <div style={{ minHeight:"100vh" }}>
         <header style={{ background:"var(--s1)", borderBottom:"1px solid var(--br)", position:"sticky", top:0, zIndex:100 }}>
           <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 24px", display:"flex", alignItems:"center", gap:6, height:58 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:9, marginRight:14 }}>
-              <div style={{ width:32, height:32, borderRadius:8, fontSize:17, background:"linear-gradient(135deg,var(--ac),var(--ab))", display:"flex", alignItems:"center", justifyContent:"center" }}>🏭</div>
-              <span style={{ fontWeight:800, fontSize:15 }}>VisitorPass</span>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
+                <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
+              </div>
+              <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
+            </div>
             </div>
             <button className="btn btn-gh" onClick={() => setTab("form")} style={{ fontSize:13 }}>← กลับหน้าหลัก</button>
           </div>
