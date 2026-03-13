@@ -197,13 +197,12 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
     <Center>
       <div style={{ width:"100%", maxWidth:580 }} className="fu">
         <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-            <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
-            <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
-          </div>
-          <div style={{ marginLeft:"auto" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+              <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
+              <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
+            </div>
             <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
-          </div>
           </div>
           <h1 style={{ fontSize:20, fontWeight:700, marginBottom:6 }}>คำร้องขอเข้าโรงงาน</h1>
           <p style={{ color:"var(--t2)", fontSize:13 }}>กรุณาพิจารณาคำร้องด้านล่าง</p>
@@ -763,10 +762,11 @@ export default function App() {
             <div style={{ display:"flex", alignItems:"center", gap:9 }}>
               <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
               <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
-             <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
             </div>
+            <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+              <button className="btn btn-gh" onClick={() => setTab("form")} style={{ fontSize:13 }}>← กลับหน้าหลัก</button>
+              <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
             </div>
-            <button className="btn btn-gh" onClick={() => setTab("form")} style={{ fontSize:13 }}>← กลับหน้าหลัก</button>
           </div>
         </header>
         {adminLoggedIn
@@ -782,14 +782,13 @@ export default function App() {
     <><G/>
       <div style={{ minHeight:"100vh" }}>
         <header style={{ background:"var(--s1)", borderBottom:"1px solid var(--br)", position:"sticky", top:0, zIndex:100 }}>
-  <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:58 }}>
-    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-      <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
-      <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
-    </div>
-    <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
-  </div>
-</header>
+          <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:58 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
+              <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
+            </div>
+            <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
+          </div>
         </header>
         <main style={{ maxWidth:1100, margin:"0 auto", padding:"36px 24px 80px" }}>
           <EmployeeForm onSubmit={handleSubmit}/>
