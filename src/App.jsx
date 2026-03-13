@@ -624,7 +624,7 @@ function EmployeeForm({ onSubmit }) {
                 <div className="counter-val">{f.visitorCount}</div>
                 <button className="counter-btn" onClick={() => setCount(f.visitorCount + 1)}>+</button>
               </div>
-              <span style={{ fontSize:13, color:"var(--t2)" }}>คน</span>
+              <span style={{ fontSize:13, color:"var(--t2)" }}>Persons</span>
             </div>
           </Field>
         </div>
