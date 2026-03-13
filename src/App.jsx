@@ -679,7 +679,7 @@ function EmployeeForm({ onSubmit }) {
       </div>
 
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
-        <button className="btn btn-p" onClick={submit} style={{ minWidth:170 }}>📤 Submit Request</button>
+        <button className="btn btn-p" onClick={submit} style={{ minWidth:170 }}>Submit Request</button>
       </div>
     </div>
   );
