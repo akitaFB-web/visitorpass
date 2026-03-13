@@ -197,9 +197,13 @@ function TokenApprovePage({ visitors, onApprove, onReject }) {
     <Center>
       <div style={{ width:"100%", maxWidth:580 }} className="fu">
         <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ display:"inline-flex", alignItems:"center", gap:9, marginBottom:14 }}>
-            <img src={LOGO_B64} alt="logo" style={{ height:36, width:"auto", objectFit:"contain" }}/>
-            <span style={{ fontWeight:800, fontSize:16, color:"var(--t1)" }}>{COMPANY_NAME}</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <img src={LOGO_B64} alt="logo" style={{ height:34, width:"auto", objectFit:"contain" }}/>
+              <span style={{ fontWeight:800, fontSize:15, color:"var(--t1)" }}>VisitorPass</span>
+  </div>
+  <span style={{ fontSize:13.5, fontWeight:600, color:"var(--t2)" }}>{COMPANY_NAME}</span>
+</div>
           </div>
           <h1 style={{ fontSize:20, fontWeight:700, marginBottom:6 }}>คำร้องขอเข้าโรงงาน</h1>
           <p style={{ color:"var(--t2)", fontSize:13 }}>กรุณาพิจารณาคำร้องด้านล่าง</p>
