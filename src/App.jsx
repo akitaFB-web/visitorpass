@@ -563,7 +563,14 @@ function EmployeeForm({ onSubmit }) {
     setErr(e);
     if (Object.keys(e).length) return;
     const token = genToken();
-    const v = { id:genId(), token, ...f, status:"pending", submittedAt:now() };
+    const v = {
+  id:genId(), token, ...f,
+  dateFrom:  String(f.dateFrom  || '').slice(0, 10),
+  dateTo:    String(f.dateTo    || '').slice(0, 10),
+  enterTime: String(f.enterTime || '').slice(0, 5),
+  exitTime:  String(f.exitTime  || '').slice(0, 5),
+  status:"pending", submittedAt:now()
+};
     onSubmit(v);
     setDone(v);
     setF(blank);
